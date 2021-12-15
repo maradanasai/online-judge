@@ -121,8 +121,7 @@ class ContestAdmin(NoBatchDeleteMixin, VersionAdmin):
         (_('Details'), {'fields': ('description', 'og_image', 'logo_override_image', 'tags', 'summary')}),
         (_('Format'), {'fields': ('format_name', 'format_config', 'problem_label_script')}),
         (_('Rating'), {'fields': ('is_rated', 'rate_all', 'rating_floor', 'rating_ceiling', 'rate_exclude')}),
-        (_('Access'), {'fields': ('access_code', 'is_private', 'private_contestants', 'is_organization_private',
-                                  'organizations', 'view_contest_scoreboard')}),
+        (_('Access'), {'fields': ('access_code', 'private_contestants', 'organizations', 'view_contest_scoreboard')}),
         (_('Justice'), {'fields': ('banned_users',)}),
     )
     list_display = ('key', 'name', 'is_visible', 'is_rated', 'locked_after', 'start_time', 'end_time', 'time_limit',
@@ -166,7 +165,7 @@ class ContestAdmin(NoBatchDeleteMixin, VersionAdmin):
         if not request.user.has_perm('judge.contest_access_code'):
             readonly += ['access_code']
         if not request.user.has_perm('judge.create_private_contest'):
-            readonly += ['is_private', 'private_contestants', 'is_organization_private', 'organizations']
+            readonly += ['private_contestants', 'organizations']
             if not request.user.has_perm('judge.change_contest_visibility'):
                 readonly += ['is_visible']
         if not request.user.has_perm('judge.contest_problem_label'):
@@ -182,6 +181,9 @@ class ContestAdmin(NoBatchDeleteMixin, VersionAdmin):
                 raise PermissionDenied
 
         super().save_model(request, obj, form, change)
+        obj.is_private = bool(form.cleaned_data['private_contestants'])
+        obj.is_organization_private = bool(form.cleaned_data['organizations'])
+        obj.save()
         # We need this flag because `save_related` deals with the inlines, but does not know if we have already rescored
         self._rescored = False
         if form.changed_data and any(f in form.changed_data for f in ('format_config', 'format_name')):
