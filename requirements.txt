@@ -38,3 +38,5 @@ bleach
 django-admin-sortable2
 icalendar
 redis
+uwsgi
+websocket-client
